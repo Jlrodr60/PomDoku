@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>pomdoku. Less busywork. More good.</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;900&display=swap">
+<style>
+/* COLORS: change the look of the whole site here (light mode first, dark mode right after) */
+:root{--bg:#FDF1DD;--card:#FFF8EC;--peach:#EDBE8A;--gold:#E8A55B;--cocoa:#6B4A35;--soft:#9A6B4F;--on-gold:#4A2F20;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2A1E17;--card:#38281F;--peach:#7A5538;--gold:#E8A55B;--cocoa:#FBE8CC;--soft:#E3BE95;--on-gold:#3A2415}}
+:root[data-theme="dark"]{--bg:#2A1E17;--card:#38281F;--peach:#7A5538;--gold:#E8A55B;--cocoa:#FBE8CC;--soft:#E3BE95;--on-gold:#3A2415}
+/* PAGE BASICS: fonts, headings, text sizes */
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:80px}
+body{margin:0;background:var(--bg);color:var(--cocoa);font:500 18px/1.6 Nunito,"Trebuchet MS",system-ui,sans-serif}
+h1,h2,h3{font-weight:900;line-height:1.1;margin:0 0 .5em;letter-spacing:-.02em}
+h1{font-size:clamp(2.6rem,7vw,4.8rem)}h2{font-size:clamp(1.9rem,4vw,2.8rem)}h3{font-size:1.25rem}
+p{margin:0 0 1em;max-width:62ch}
+/* NAVIGATION BAR at the top */
+nav{display:flex;justify-content:space-between;align-items:center;padding:18px 5vw;position:sticky;top:0;background:var(--bg);z-index:5}
+.logo{font-weight:900;font-size:1.7rem;letter-spacing:-.03em}
+nav a{color:var(--cocoa);text-decoration:none;margin-left:22px;font-weight:700}
+/* LAYOUT: sections, buttons, cards */
+section{padding:72px 5vw;max-width:1100px;margin:0 auto}
+.hero{min-height:78vh;display:flex;flex-direction:column;justify-content:center}
+.btn{display:inline-block;background:var(--gold);color:var(--on-gold);border:0;border-radius:999px;padding:14px 28px;font:900 1rem Nunito,sans-serif;cursor:pointer;text-decoration:none;transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}.btn.alt{background:transparent;border:3px solid var(--gold);color:var(--cocoa)}
+.row{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px}
+.card{background:var(--card);border-radius:28px 28px 28px 8px;padding:26px}
+.card:nth-child(even){border-radius:28px 28px 8px 28px;background:var(--peach);color:var(--on-gold)}
+/* HOW IT WORKS: the rounded numbered steps */
+.steps{list-style:none;padding:0;display:grid;gap:14px;counter-reset:s}
+.steps li{counter-increment:s;background:var(--card);border-radius:999px;padding:16px 26px 16px 70px;position:relative}
+.steps li::before{content:counter(s);position:absolute;left:12px;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;background:var(--gold);color:var(--on-gold);display:grid;place-items:center;font-weight:900}
+/* HIGHLIGHT: the orange outline Pomsy puts around what she points to */
+.hl{outline:4px solid var(--gold);outline-offset:8px;border-radius:24px}
+/* TEXT BOXES (email and the Ask Pomsy bar) */
+input{font:inherit;padding:13px 20px;border-radius:999px;border:3px solid var(--peach);background:var(--card);color:var(--cocoa);min-width:230px}
+:focus-visible{outline:3px solid var(--cocoa);outline-offset:3px}
+/* FOOTER */
+footer{padding:40px 5vw 120px;text-align:center;color:var(--soft)}
+/* POMSY: the 3D canvas, her speech bubble, the ask bar at the bottom right, and the tap ripple */
+#pom{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:20}
+#bub{position:fixed;z-index:21;max-width:240px;background:var(--card);color:var(--cocoa);border:3px solid var(--gold);border-radius:20px;padding:10px 16px;font-weight:700;font-size:.95rem;line-height:1.4;pointer-events:none;opacity:0;transition:opacity .25s;transform:translate(-50%,-100%)}
+#bub.on{opacity:1}
+#dock{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:22;display:flex;gap:8px;align-items:center;background:var(--card);padding:8px 8px 8px 16px;border-radius:999px;border:3px solid var(--peach)}
+#dock input{min-width:0;width:min(220px,40vw);border-width:2px;padding:9px 14px}
+#mic.live{background:#D9603B;color:#fff}
+.ring{position:fixed;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:4px solid var(--gold);z-index:19;pointer-events:none;animation:rp .7s ease-out forwards}
+@keyframes rp{from{transform:scale(.3);opacity:1}to{transform:scale(2.2);opacity:0}}
+</style>
+</head>
+<body>
+<!-- NAVIGATION BAR -->
+<nav><span class="logo">pomdoku.</span><span><a href="#tools">Tools</a><a href="#how">How it works</a><a href="#join">Join</a></span></nav>
+
+<!-- HERO: the first thing visitors see -->
+<section class="hero" id="top">
+<h1>Less busywork.<br>More good.</h1>
+<p>Nonprofit teams are full of people who want to help, and too many of their hours go to spreadsheets, deadlines and reports. pomdoku. is a workflow platform that takes over the admin so your team can get back to the mission.</p>
+<div class="row"><button class="btn" id="meet">Meet Pomsy</button><a class="btn alt" href="#tools">See the tools</a></div>
+</section>
+
+<!-- TOOLS: the four cards. The ids (grants, volunteers, donors, reports) are the spots Pomsy can fly to -->
+<section id="tools">
+<h2>The paperwork Pomsy takes off your plate</h2>
+<div class="grid">
+<div class="card" id="grants"><h3>Grants</h3><p>Track deadlines, required documents and who owns each application.</p></div>
+<div class="card" id="volunteers"><h3>Volunteers</h3><p>Fill shifts, send reminders and see who is available without the group-text chaos.</p></div>
+<div class="card" id="donors"><h3>Donors</h3><p>Keep records in one place and send thank-you notes while the gift is still fresh.</p></div>
+<div class="card" id="reports"><h3>Reports</h3><p>Pull the numbers funders and regulators ask for into a report in a few clicks.</p></div>
+</div>
+</section>
+
+<!-- HOW IT WORKS: three steps. Pomsy can fly here too (id "how") -->
+<section id="how">
+<h2>How it works</h2>
+<ol class="steps">
+<li>Tell pomdoku. what your team does each week.</li>
+<li>Pomsy sets up workflows for the repeat tasks.</li>
+<li>Your team reviews, approves and gets back to people.</li>
+</ol>
+</section>
+
+<!-- WAITLIST: email box. Not connected to an email service yet (id "join") -->
+<section id="join">
+<h2>Be one of the first nonprofits</h2>
+<p>We are building pomdoku. with nonprofit teams. Leave your email and we will reach out.</p>
+<div class="row"><input id="email" type="email" placeholder="you@yournonprofit.org" aria-label="Email address"><button class="btn" id="wl">Join the waitlist</button></div>
+</section>
+<!-- FOOTER -->
+<footer>pomdoku. &nbsp;Less busywork. More good.</footer>
+
+<!-- POMSY LAYER: the see-through canvas she is drawn on, her speech bubble, and the Ask/Talk bar -->
+<canvas id="pom"></canvas>
+<div id="bub" role="status" aria-live="polite"></div>
+<div id="dock"><input id="ask" placeholder="Ask Pomsy, e.g. volunteers" aria-label="Ask Pomsy"><button class="btn" id="mic" aria-label="Talk to Pomsy">Talk</button></div>
+
+<!-- Three.js: the library that draws the 3D mascot -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- ALL OF POMSY'S CODE: her 3D body, movement, and how she responds to requests -->
+<script>
+(function(){
+// ---- SETUP: grab the canvas and speech bubble, set starting sizes ----
+var cv=document.getElementById('pom'),bub=document.getElementById('bub');
+var W=innerWidth,H=innerHeight,S=70,r,sc,cam,pom,eyes=[],mouth;
+// say(text, ms): shows text in Pomsy's speech bubble, then hides it after ms milliseconds
+function say(t,ms){bub.textContent=t;bub.classList.add('on');clearTimeout(say.t);say.t=setTimeout(function(){bub.classList.remove('on')},ms||5000)}
+try{
+// ---- BUILD 3D POMSY: renderer, camera and lights ----
+r=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true});
+r.setPixelRatio(Math.min(devicePixelRatio,2));
+sc=new THREE.Scene();cam=new THREE.OrthographicCamera(0,W,H,0,-1000,1000);cam.position.z=500;
+sc.add(new THREE.HemisphereLight(0xfff1dc,0xc98a55,.9));
+var dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(-1,2,3);sc.add(dl);
+function mat(c){return new THREE.MeshStandardMaterial({color:c,roughness:.75})}
+function blob(g,c,x,y,z,sx,sy,sz){var m=new THREE.Mesh(g,mat(c));m.position.set(x,y,z);m.scale.set(sx,sy,sz);pom.add(m);return m}
+// Pomsy's body parts, all added to one group: base, 10 scalloped lobes, lighter face, then eyes, cheeks and feet
+// blob(shape, color, x, y, z, width, height, depth) places a squashed sphere
+pom=new THREE.Group();
+var sp=new THREE.SphereGeometry(1,32,24);
+blob(sp,0xEBB070,0,0,0,.82,.82,.55);
+for(var i=0;i<10;i++){var a=i/10*Math.PI*2;blob(sp,0xEBB070,Math.cos(a)*.8,Math.sin(a)*.8,0,.34,.34,.3)}
+blob(sp,0xF2C789,0,0,.12,.64,.64,.5);
+// Finds the surface of the face so the eyes, cheeks and mouth sit on it
+function fz(x,y){return .12+.5*Math.sqrt(Math.max(0,1-(x*x+y*y)/.41))}
+[-1,1].forEach(function(s){eyes.push(blob(sp,0x6E4A38,s*.22,.08,fz(s*.22,.08)+.02,.07,.1,.05));blob(sp,0xE39A7A,s*.4,-.13,fz(s*.4,-.13)+.01,.13,.08,.04);blob(sp,0xDE9E68,s*.36,-.86,.25,.26,.15,.18)});
+// The smile: half a ring, flipped so it curves up
+mouth=new THREE.Mesh(new THREE.TorusGeometry(.12,.03,8,20,Math.PI),mat(0x6E4A38));mouth.rotation.z=Math.PI;mouth.position.set(0,-.12,fz(0,-.12)+.03);pom.add(mouth);
+pom.scale.setScalar(S);sc.add(pom);
+}catch(e){cv.style.display='none';pom=null}
+// ---- MOVEMENT STATE: P is Pomsy's position (x,y), target (tx,ty) and speed (vx,vy). mx,my is the cursor ----
+var P={x:W-90,y:H-150,tx:W-90,ty:H-150,vx:0,vy:0},mx=W/2,my=H/2,pulse=0,wave=0,blink=1;
+// Keeps the canvas and Pomsy's size right when the window resizes
+function size(){W=innerWidth;H=innerHeight;S=Math.max(42,Math.min(70,Math.min(W,H)*.09));if(!pom)return;r.setSize(W,H);cam.right=W;cam.top=H;cam.updateProjectionMatrix()}
+addEventListener('resize',size);size();
+addEventListener('pointermove',function(e){mx=e.clientX;my=e.clientY});
+// go(x,y): sends Pomsy to a spot, then sends her back to the corner after 9 seconds (change 9000 to adjust)
+var homeT;function go(x,y,home){P.tx=Math.max(S,Math.min(W-S,x));P.ty=Math.max(S*1.2,Math.min(H-S,y));clearTimeout(homeT);if(!home)homeT=setTimeout(function(){if(lastHl)lastHl.classList.remove('hl');say('I will be right here if you need me.',3500);go(W-90,H-150,1)},9000)}
+// ANIMATION LOOP: runs every frame. Moves Pomsy toward her target, adds bobbing, tilting, blinking,
+// looks toward the cursor, draws the scene, and keeps the speech bubble above her
+function loop(t){requestAnimationFrame(loop);
+P.vx+=(P.tx-P.x)*.012;P.vy+=(P.ty-P.y)*.012;P.vx*=.86;P.vy*=.86;P.x+=P.vx;P.y+=P.vy;
+if(pom){var bob=Math.sin(t/400)*5,sq=1+pulse*.18;pulse*=.92;wave*=.95;
+pom.position.set(P.x,H-P.y+bob,0);
+pom.rotation.z=-P.vx*.012+Math.sin(t/90)*wave*.3;
+pom.rotation.y+=((mx-P.x)/W*.9-pom.rotation.y)*.08;pom.rotation.x+=((my-P.y)/H*.6-pom.rotation.x)*.08;
+pom.scale.set(S*(2-sq),S*sq,S);
+blink=(t%4200<140)?.12:1;eyes.forEach(function(e){e.scale.y=.1*blink});
+r.render(sc,cam)}
+bub.style.left=Math.max(130,Math.min(W-130,P.x))+'px';bub.style.top=Math.max(70,P.y-S-6)+'px'}
+requestAnimationFrame(loop);
+// ---- GUIDING: guide(id, message, afterClick) scrolls to a section, flies Pomsy there, highlights it,
+// shows a message, then taps it with a ripple ----
+var lastHl;
+function guide(id,msg,click){var el=document.getElementById(id);if(!el)return;
+if(lastHl)lastHl.classList.remove('hl');
+el.scrollIntoView({behavior:'smooth',block:'center'});
+setTimeout(function(){var b=el.getBoundingClientRect();el.classList.add('hl');lastHl=el;
+go(b.right>W-S*2?b.left-S:b.right+S*.4,b.top+b.height/2);say(msg,6000);
+setTimeout(function(){var d=document.createElement('div');d.className='ring';d.style.left=P.x+'px';d.style.top=P.y+'px';document.body.appendChild(d);setTimeout(function(){d.remove()},800);pulse=1;if(click)click(el)},1500)},650)}
+// ---- KEYWORD BACKUP: simple word matching used if the AI is not reachable. Each row is [words, section id, message] ----
+var map=[[/grant|fund|deadline|application/,'grants','Grants live here. Deadlines and owners in one place.'],
+[/volunt|shift|schedul/,'volunteers','Here is volunteer scheduling.'],
+[/donor|donat|gift|crm/,'donors','Donor records and thank-yous are right here.'],
+[/report|complian|990|audit|funder/,'reports','Reports for funders are built here.'],
+[/how|work|setup/,'how','Here is how pomdoku. works.'],
+[/join|wait|demo|sign|price|cost|contact|email|start/,'join','Join the waitlist here.']];
+function keywordRoute(q){q=q.toLowerCase();
+/* Backup only: used when the AI request fails */
+for(var i=0;i<map.length;i++)if(map[i][0].test(q)){guide(map[i][1],map[i][2],map[i][1]==='join'?function(){document.getElementById('email').focus()}:null);return}
+say('I did not catch that. Try grants, volunteers, donors, reports or how it works.',6000);wave=1}
+// ---- ASK CLAUDE: sends the visitor's request to /api/pomsy (the server function), then guides to the section Claude picks ----
+async function route(q){
+say('Thinking...',8000);
+try{
+var res=await fetch('/api/pomsy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:q})});
+if(!res.ok)throw new Error('api');
+var d=await res.json();
+if(d.target&&document.getElementById(d.target)){guide(d.target,d.say||'Here you go.',d.target==='join'?function(){document.getElementById('email').focus()}:null)}
+else{say(d.say||'Tell me what you need help with.',6000);wave=1}
+}catch(e){keywordRoute(q)}}
+// ---- INPUTS: the Ask bar (press Enter), Meet Pomsy button, waitlist button ----
+var ask=document.getElementById('ask');
+ask.addEventListener('keydown',function(e){if(e.key==='Enter'&&ask.value.trim()){route(ask.value);ask.value=''}});
+document.getElementById('meet').onclick=function(){go(W/2+120,H/2);wave=1;pulse=1;say('Hi, I am Pomsy! Type a request below or tap Talk.',6500)};
+document.getElementById('wl').onclick=function(){guide('join','The waitlist form is not connected to an email service yet.',null)};
+// ---- MICROPHONE: browser speech recognition. Turns speech into text and sends it to route() ----
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition,mic=document.getElementById('mic'),rec;
+mic.onclick=function(){
+if(!SR){say('Voice is not supported in this browser. Type your request instead.');return}
+if(rec){rec.stop();return}
+rec=new SR();rec.lang='en-US';rec.onstart=function(){mic.classList.add('live');mic.textContent='Listening';say('Listening...',8000)};
+rec.onresult=function(e){var q=e.results[0][0].transcript;say('You said: '+q,2500);setTimeout(function(){route(q)},1200)};
+rec.onerror=function(e){var m={'not-allowed':'The microphone is blocked here. Allow it in your browser, or open the site in its own tab.','service-not-allowed':'The microphone is blocked here. Allow it in your browser, or open the site in its own tab.','no-speech':'I did not hear anything. Try again a little closer.','audio-capture':'I cannot find a microphone on this device.','network':'Voice needs an internet connection.'};say(m[e.error]||'Voice did not work. Type your request instead.',7000)};
+rec.onend=function(){mic.classList.remove('live');mic.textContent='Talk';rec=null};
+try{rec.start()}catch(e){rec=null}};
+// Greeting shortly after the page loads
+setTimeout(function(){wave=1;say('Hi, I am Pomsy! I can show you around.',5000)},1200);
+})();
+</script>
+</body>
+</html>
